@@ -1,6 +1,7 @@
 use std::io;
 
-const EMPTY_CELL: &str = "  ";
+const EMPTY_CELL: &str = " ";
+const CELL_SEPARATOR: &str = "|";
 
 pub fn game(name: String) {
     let v = setup_grid();
@@ -31,10 +32,18 @@ fn print_grid(v: &Vec<Vec<String>>) {
     for row in v {
         print!("|");
         for column in row {
-            print!("{}|", column);
+            if column.eq("🟡") {
+                super::console_style::yellow_color_text("X", true);
+            }
+            else if column.eq("🔴") {
+                super::console_style::red_color_text("O", true);
+            } else {
+                print!("{}", column);
+            }
+            print!("{}", CELL_SEPARATOR);
         }
         println!("");
-        println!("----------------------");
+        println!("---------------");
     }
 }
 
@@ -46,6 +55,14 @@ fn print_number() {
 
 fn next_move(v: Vec<Vec<String>>, red_turn: bool) {
     print_state(&v);
+
+    print!("It's ");
+    if red_turn {
+        super::console_style::red_color_text("red", true);
+    } else {
+        super::console_style::yellow_color_text("yellow", true);
+    };
+    println!(" turn");
 
     let mut input = String::new();
     io::stdin()
@@ -61,7 +78,7 @@ fn next_move(v: Vec<Vec<String>>, red_turn: bool) {
         "5" => insert_token(v, 5, red_turn),
         "6" => insert_token(v, 6, red_turn),
         _ => { 
-            next_move(v, !red_turn);
+            next_move(v, red_turn);
         },
     }
 }

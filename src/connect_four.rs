@@ -53,7 +53,7 @@ impl GameState {
                 }
                 print!("{}", CELL_SEPARATOR);
             }
-            println!("");
+            println!("{}", CELL_SEPARATOR);
             println!("{}", "-".repeat(self.cols * 2 + 1));
         }
     }
@@ -86,7 +86,7 @@ impl GameState {
         println!(" turn");
 
         let col = loop {
-            println!("{}, submit a number from 0 to {}", name.trim(), self.cols);
+            // println!("{}, submit a number from 0 to {}", name.trim(), self.cols);
 
             let mut input = String::new();
             io::stdin()
@@ -95,7 +95,7 @@ impl GameState {
 
             let trimmed = input.trim();
             match trimmed.parse::<usize>() {
-                Ok(i) if i < self.cols => break i,
+                Ok(i) if i <= self.cols => break i,
                 Ok(i) => println!("{} is greater than {} columns!", i, self.cols),
                 Err(..) => println!("{} is not a column number!", trimmed),
             };

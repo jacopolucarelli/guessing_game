@@ -1,106 +1,176 @@
-use std::{io};
+use std::io;
 
 const EMPTY_CELL: &str = " ";
 const CELL_SEPARATOR: &str = "|";
 
-pub fn game(name: String) {
-    let v = setup_grid();
-    println!("");
-    println!("{}, submit a number from 0 to 6", name.trim());
-    print_state(&v);
-    next_move(v, true, name);
+enum Player {
+    Red,
+    Yellow,
 }
-
-fn setup_grid() -> Vec<Vec<String>> {
-    let mut v: Vec<Vec<String>>  = vec![];
-    for _ in 0..7 {
-        let mut row: Vec<String> = vec![];
-        for _ in 0..7 {
-            row.push(String::from(EMPTY_CELL));
+impl Player {
+    fn get_token(&self) -> Token {
+        match self {
+            Player::Red => Token::Red,
+            Player::Yellow => Token::Yellow,
         }
-        v.push(row);
     }
-    v
 }
 
-fn print_state(v: &Vec<Vec<String>>) {
-    print_number();
-    println!("");
-    print_grid(v);
+#[derive(Clone)]
+enum Token {
+    Red,
+    Yellow,
+    Empty,
 }
 
-fn print_grid(v: &Vec<Vec<String>>) {
-    for row in v {
-        print!("|");
-        for column in row {
-            if column.eq("🟡") {
-                super::console_style::yellow_color_text("X", true);
-            }
-            else if column.eq("🔴") {
-                super::console_style::red_color_text("O", true);
-            } else {
-                print!("{}", column);
-            }
+struct GameState {
+    grid: Vec<Vec<Token>>,
+    rows: usize,
+    cols: usize,
+    player: Player,
+    winner: Option<Player>,
+}
+
+impl GameState {
+    fn new(rows: usize, cols: usize) -> GameState {
+        GameState {
+            grid: vec![vec![Token::Empty; cols]; rows],
+            rows,
+            cols,
+            player: Player::Red,
+            winner: None,
+        }
+    }
+
+    fn print_grid(&self) {
+        for row in &self.grid {
             print!("{}", CELL_SEPARATOR);
+            for token in row {
+                match token {
+                    Token::Red => super::console_style::red_color_text("O", true),
+                    Token::Yellow => super::console_style::yellow_color_text("X", true),
+                    Token::Empty => print!("{}", EMPTY_CELL),
+                }
+                print!("{}", CELL_SEPARATOR);
+            }
+            println!("");
+            println!("{}", "-".repeat(self.cols * 2 + 1));
         }
+    }
+
+    fn print_number(&self) {
+        for i in 0..=self.cols {
+            print!("{}{}", EMPTY_CELL, i);
+        }
+    }
+
+    fn print_state(&self) {
+        self.print_number();
         println!("");
-        println!("---------------");
+        self.print_grid();
     }
-}
 
-fn print_number() {
-    for i in 0..7 {
-        print!("{}{}", EMPTY_CELL, i);
+    fn switch_player(&mut self) {
+        self.player = match self.player {
+            Player::Red => Player::Yellow,
+            Player::Yellow => Player::Red,
+        };
     }
-}
 
-fn next_move(v: Vec<Vec<String>>, red_turn: bool, name:String) {
-    print!("It's ");
-    if red_turn {
-        super::console_style::red_color_text("red", true);
-    } else {
-        super::console_style::yellow_color_text("yellow", true);
-    };
-    println!(" turn");
-
-    let mut input = String::new();
-    io::stdin()
-    .read_line(&mut input)
-    .expect("Failed to read line");
-
-    match input.trim() {   
-        "0" => insert_token(v, 0, red_turn, name),
-        "1" => insert_token(v, 1, red_turn, name),
-        "2" => insert_token(v, 2, red_turn, name),
-        "3" => insert_token(v, 3, red_turn, name),
-        "4" => insert_token(v, 4, red_turn, name),
-        "5" => insert_token(v, 5, red_turn, name),
-        "6" => insert_token(v, 6, red_turn, name),
-        _ => { 
-            next_move(v, red_turn, name);
-        },
-    }
-}
-
-fn insert_token(mut v: Vec<Vec<String>>, cell_index: usize, red_turn: bool, name:String) {
-    let token = if red_turn {"🔴"} else {"🟡"};
-    for row_index in (0..7).rev() {
-        if v[row_index][cell_index].trim().is_empty() {
-            v[row_index][cell_index] = String::from(token);
-            check_end_game(&v, red_turn, &name, row_index, cell_index);
-            break;
-        } else {
-            continue;
+    fn get_col_input(&self, name: &String) -> usize {
+        print!("It's ");
+        match self.player {
+            Player::Red => super::console_style::red_color_text("red", true),
+            Player::Yellow => super::console_style::yellow_color_text("yellow", true),
         }
+        println!(" turn");
+
+        let col = loop {
+            println!("{}, submit a number from 0 to {}", name.trim(), self.cols);
+
+            let mut input = String::new();
+            io::stdin()
+                .read_line(&mut input)
+                .expect("Failed to read line");
+
+            let trimmed = input.trim();
+            match trimmed.parse::<usize>() {
+                Ok(i) if i < self.cols => break i,
+                Ok(i) => println!("{} is greater than {} columns!", i, self.cols),
+                Err(..) => println!("{} is not a column number!", trimmed),
+            };
+        };
+
+        col
     }
-    print_state(&v);
-    next_move(v, !red_turn, name);
+
+    fn insert_token(&mut self, col: usize) -> Option<(usize, usize)> {
+        for row in (0..self.rows).rev() {
+            match self.grid[row][col] {
+                Token::Empty => {
+                    self.grid[row][col] = self.player.get_token();
+                    return Some((row, col));
+                }
+                _ => continue,
+            }
+        }
+        None
+    }
+
+    fn check_win(&self, row: usize, col: usize) -> bool {
+        false
+    }
+
+    fn check_tie(&self) -> bool {
+        false
+    }
 }
 
-fn check_end_game(v: &Vec<Vec<String>>, red_turn: bool, name: &String, row_index: usize, cell_index: usize) {
-    if check_horizontal_line(v, red_turn) || 
-            check_vertical_line(v, red_turn, row_index, cell_index) || 
-            check_oblique_line(v, red_turn, row_index, cell_index) {
+pub fn game(name: String) {
+    let mut game_state = GameState::new(6, 7);
+    // todo: print intro
+    loop {
+        // todo: print game state
+        game_state.print_state();
+
+        // ask for col input & validate loop (col exists, has room) -> usize
+        let col = game_state.get_col_input(&name);
+
+        // insert token, get row, col -> (usize, usize)
+        let (row, col) = match game_state.insert_token(col) {
+            Some((row, col)) => (row, col),
+            None => {
+                println!("Column {} is full!", col);
+                continue;
+            }
+        };
+
+        // todo: check win from coords
+        if game_state.check_win(row, col) {
+            todo!();
+        }
+
+        // todo: check tie (all slots taken but no winner)
+        if game_state.check_tie() {
+            todo!();
+        }
+
+        // switch player
+        game_state.switch_player();
+    }
+}
+
+fn check_end_game(
+    v: &Vec<Vec<String>>,
+    red_turn: bool,
+    name: &String,
+    row_index: usize,
+    cell_index: usize,
+) {
+    if check_horizontal_line(v, red_turn)
+        || check_vertical_line(v, red_turn, row_index, cell_index)
+        || check_oblique_line(v, red_turn, row_index, cell_index)
+    {
         end_game(v, red_turn, &name);
     }
 }
@@ -124,7 +194,12 @@ fn check_horizontal_line(v: &Vec<Vec<String>>, red_turn: bool) -> bool {
     return false;
 }
 
-fn check_vertical_line(v: &Vec<Vec<String>>, red_turn: bool, row_index: usize, cell_index: usize) -> bool {
+fn check_vertical_line(
+    v: &Vec<Vec<String>>,
+    red_turn: bool,
+    row_index: usize,
+    cell_index: usize,
+) -> bool {
     // La row più bassa della griglia ha indice 6: se l'ultimo token inserito ha indice maggiore di 3 non posso avere una vincita verticale
     if row_index > 3 {
         return false;
@@ -141,16 +216,20 @@ fn check_vertical_line(v: &Vec<Vec<String>>, red_turn: bool, row_index: usize, c
             counter = 0;
         }
         if counter == 4 {
-            return true
+            return true;
         }
     }
     return false;
 }
 
-fn check_oblique_line(v: &Vec<Vec<String>>, red_turn: bool, row_index: usize, cell_index: usize) -> bool {
-    
-    let token = if red_turn {"🔴"} else {"🟡"};
-    
+fn check_oblique_line(
+    v: &Vec<Vec<String>>,
+    red_turn: bool,
+    row_index: usize,
+    cell_index: usize,
+) -> bool {
+    let token = if red_turn { "🔴" } else { "🟡" };
+
     let mut counter = 0; //La cella in cui mi trovo la conto qui
     counter += check_oblique_line_left_up(v, token, row_index, cell_index, 0);
     counter += check_oblique_line_left_down(v, token, row_index, cell_index, 0);
@@ -165,18 +244,24 @@ fn check_oblique_line(v: &Vec<Vec<String>>, red_turn: bool, row_index: usize, ce
     return counter == 5;
 }
 
-fn check_oblique_line_left_up(v: &Vec<Vec<String>>, token: &str, row_index: usize, cell_index: usize, counter: usize) -> usize {
+fn check_oblique_line_left_up(
+    v: &Vec<Vec<String>>,
+    token: &str,
+    row_index: usize,
+    cell_index: usize,
+    counter: usize,
+) -> usize {
     {
         let row_index_signed: i32 = match row_index.try_into() {
             Ok(row_index) => row_index,
             Err(_) => panic!("couldn't fit in i32"),
         };
-    
+
         let cell_index_signed: i32 = match cell_index.try_into() {
             Ok(cell_index) => cell_index,
             Err(_) => panic!("couldn't fit in i32"),
         };
-        if row_index_signed-1 < 0 || cell_index_signed-1 < 0 || counter == 4 {
+        if row_index_signed - 1 < 0 || cell_index_signed - 1 < 0 || counter == 4 {
             let cell = &v[row_index][cell_index];
             if cell.eq(token) {
                 return counter + 1;
@@ -184,40 +269,52 @@ fn check_oblique_line_left_up(v: &Vec<Vec<String>>, token: &str, row_index: usiz
             return counter;
         }
     }
-    
+
     let cell = &v[row_index][cell_index];
     if cell.eq(token) {
-        return check_oblique_line_left_up(v, token, row_index-1, cell_index-1, counter+1); 
+        return check_oblique_line_left_up(v, token, row_index - 1, cell_index - 1, counter + 1);
     } else {
         return counter;
     }
 }
 
-fn check_oblique_line_left_down(v: &Vec<Vec<String>>, token: &str, row_index: usize, cell_index: usize, counter: usize) -> usize {
-    if row_index+1 > 6 || cell_index+1 > 6 || counter == 4 {
+fn check_oblique_line_left_down(
+    v: &Vec<Vec<String>>,
+    token: &str,
+    row_index: usize,
+    cell_index: usize,
+    counter: usize,
+) -> usize {
+    if row_index + 1 > 6 || cell_index + 1 > 6 || counter == 4 {
         let cell = &v[row_index][cell_index];
         if cell.eq(token) {
             return counter + 1;
         }
         return counter;
     }
-    
+
     let cell = &v[row_index][cell_index];
     if cell.eq(token) {
-        return check_oblique_line_left_down(v, token, row_index+1, cell_index+1, counter+1); 
+        return check_oblique_line_left_down(v, token, row_index + 1, cell_index + 1, counter + 1);
     } else {
         return counter;
     }
 }
 
-fn check_oblique_line_right_up(v: &Vec<Vec<String>>, token: &str, row_index: usize, cell_index: usize, counter: usize) -> usize {
+fn check_oblique_line_right_up(
+    v: &Vec<Vec<String>>,
+    token: &str,
+    row_index: usize,
+    cell_index: usize,
+    counter: usize,
+) -> usize {
     {
         let row_index_signed: i32 = match row_index.try_into() {
             Ok(row_index) => row_index,
             Err(_) => panic!("couldn't fit in i32"),
         };
-        
-        if row_index_signed-1 < 0 || cell_index+1 > 6 || counter == 4 {
+
+        if row_index_signed - 1 < 0 || cell_index + 1 > 6 || counter == 4 {
             let cell = &v[row_index][cell_index];
             if cell.eq(token) {
                 return counter + 1;
@@ -225,23 +322,29 @@ fn check_oblique_line_right_up(v: &Vec<Vec<String>>, token: &str, row_index: usi
             return counter;
         }
     }
-    
+
     let cell = &v[row_index][cell_index];
     if cell.eq(token) {
-        return check_oblique_line_right_up(v, token, row_index-1, cell_index+1, counter+1); 
+        return check_oblique_line_right_up(v, token, row_index - 1, cell_index + 1, counter + 1);
     } else {
         return counter;
     }
 }
 
-fn check_oblique_line_right_down(v: &Vec<Vec<String>>, token: &str, row_index: usize, cell_index: usize, counter: usize) -> usize {
+fn check_oblique_line_right_down(
+    v: &Vec<Vec<String>>,
+    token: &str,
+    row_index: usize,
+    cell_index: usize,
+    counter: usize,
+) -> usize {
     {
         let cell_index_signed: i32 = match cell_index.try_into() {
             Ok(cell_index) => cell_index,
             Err(_) => panic!("couldn't fit in i32"),
         };
-        
-        if cell_index_signed-1 < 0 || row_index+1 > 6 || counter == 4 {
+
+        if cell_index_signed - 1 < 0 || row_index + 1 > 6 || counter == 4 {
             let cell = &v[row_index][cell_index];
             if cell.eq(token) {
                 return counter + 1;
@@ -250,17 +353,17 @@ fn check_oblique_line_right_down(v: &Vec<Vec<String>>, token: &str, row_index: u
             }
         }
     }
-    
+
     let cell = &v[row_index][cell_index];
     if cell.eq(token) {
-        return check_oblique_line_right_down(v, token, row_index+1, cell_index-1, counter+1); 
+        return check_oblique_line_right_down(v, token, row_index + 1, cell_index - 1, counter + 1);
     } else {
-       return counter;
+        return counter;
     }
 }
 
 fn end_game(v: &Vec<Vec<String>>, red_turn: bool, name: &String) {
-    print_state(&v);
+    //print_state(&v);
     if red_turn {
         super::console_style::red_color_text("red wins! :D", false)
     } else {

@@ -5,7 +5,7 @@ mod memory_sequence;
 mod common_function;
 mod ascii_pics;
 mod console_style;
-mod force_four;
+mod connect_four;
 
 fn main() {
     start_game();

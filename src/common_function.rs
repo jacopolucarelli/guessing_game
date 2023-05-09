@@ -1,6 +1,3 @@
-// use std::fs::File;
-// use std::io::{self, BufRead};
-// use std::path::Path;
 use std::{thread, time};
 use std::io;
 
@@ -11,7 +8,7 @@ pub fn menu(name: String) {
     println!("1 Guessing Number");
     println!("2 Hang Man");
     println!("3 Memory Sequence");
-    println!("4 Force Four");
+    println!("4 Connect Four");
     println!("* Quit");
 
     io::stdin()
@@ -22,7 +19,7 @@ pub fn menu(name: String) {
         "1" => return super::guessing_number::game(name),
         "2" => return super::hang_man::game(name),
         "3" => return super::memory_sequence::game(name),
-        "4" => return super::force_four::game(name),
+        "4" => return super::connect_four::game(name),
         _ => { 
             print_string(super::ascii_pics::meme(), 50);
             thread::sleep(time::Duration::from_millis(150));

@@ -98,7 +98,9 @@ fn insert_token(mut v: Vec<Vec<String>>, cell_index: usize, red_turn: bool, name
 }
 
 fn check_end_game(v: &Vec<Vec<String>>, red_turn: bool, name: &String, row_index: usize, cell_index: usize) {
-    if check_horizontal_line(v, red_turn) || check_vertical_line(v, red_turn, row_index, cell_index) {
+    if check_horizontal_line(v, red_turn) || 
+            check_vertical_line(v, red_turn, row_index, cell_index) || 
+            check_oblique_line(v, red_turn, row_index, cell_index) {
         end_game(v, red_turn, &name);
     }
 }
@@ -143,6 +145,119 @@ fn check_vertical_line(v: &Vec<Vec<String>>, red_turn: bool, row_index: usize, c
         }
     }
     return false;
+}
+
+fn check_oblique_line(v: &Vec<Vec<String>>, red_turn: bool, row_index: usize, cell_index: usize) -> bool {
+    
+    let token = if red_turn {"🔴"} else {"🟡"};
+    
+    let mut counter = 0; //La cella in cui mi trovo la conto qui
+    counter += check_oblique_line_left_up(v, token, row_index, cell_index, 0);
+    counter += check_oblique_line_left_down(v, token, row_index, cell_index, 0);
+    if counter == 5 {
+        return true;
+    }
+
+    counter = 0;
+    counter += check_oblique_line_right_up(v, token, row_index, cell_index, 0);
+    counter += check_oblique_line_right_down(v, token, row_index, cell_index, 0);
+
+    return counter == 5;
+}
+
+fn check_oblique_line_left_up(v: &Vec<Vec<String>>, token: &str, row_index: usize, cell_index: usize, counter: usize) -> usize {
+    {
+        let row_index_signed: i32 = match row_index.try_into() {
+            Ok(row_index) => row_index,
+            Err(_) => panic!("couldn't fit in i32"),
+        };
+    
+        let cell_index_signed: i32 = match cell_index.try_into() {
+            Ok(cell_index) => cell_index,
+            Err(_) => panic!("couldn't fit in i32"),
+        };
+        if row_index_signed-1 < 0 || cell_index_signed-1 < 0 || counter == 4 {
+            let cell = &v[row_index][cell_index];
+            if cell.eq(token) {
+                return counter + 1;
+            }
+            return counter;
+        }
+    }
+    
+    let cell = &v[row_index][cell_index];
+    if cell.eq(token) {
+        return check_oblique_line_left_up(v, token, row_index-1, cell_index-1, counter+1); 
+    } else {
+        return counter;
+    }
+}
+
+fn check_oblique_line_left_down(v: &Vec<Vec<String>>, token: &str, row_index: usize, cell_index: usize, counter: usize) -> usize {
+    if row_index+1 > 6 || cell_index+1 > 6 || counter == 4 {
+        let cell = &v[row_index][cell_index];
+        if cell.eq(token) {
+            return counter + 1;
+        }
+        return counter;
+    }
+    
+    let cell = &v[row_index][cell_index];
+    if cell.eq(token) {
+        return check_oblique_line_left_down(v, token, row_index+1, cell_index+1, counter+1); 
+    } else {
+        println!("check_oblique_line_left_down counter B{}", counter);
+        return counter;
+    }
+}
+
+fn check_oblique_line_right_up(v: &Vec<Vec<String>>, token: &str, row_index: usize, cell_index: usize, counter: usize) -> usize {
+    {
+        let row_index_signed: i32 = match row_index.try_into() {
+            Ok(row_index) => row_index,
+            Err(_) => panic!("couldn't fit in i32"),
+        };
+        
+        if row_index_signed-1 < 0 || cell_index+1 > 6 || counter == 4 {
+            let cell = &v[row_index][cell_index];
+            if cell.eq(token) {
+                return counter + 1;
+            }
+            return counter;
+        }
+    }
+    
+    let cell = &v[row_index][cell_index];
+    if cell.eq(token) {
+        return check_oblique_line_right_up(v, token, row_index-1, cell_index+1, counter+1); 
+    } else {
+        return counter;
+    }
+}
+
+fn check_oblique_line_right_down(v: &Vec<Vec<String>>, token: &str, row_index: usize, cell_index: usize, counter: usize) -> usize {
+    {
+        let cell_index_signed: i32 = match cell_index.try_into() {
+            Ok(cell_index) => cell_index,
+            Err(_) => panic!("couldn't fit in i32"),
+        };
+        
+        if cell_index_signed-1 < 0 || row_index+1 > 6 || counter == 4 {
+            let cell = &v[row_index][cell_index];
+            if cell.eq(token) {
+                return counter + 1;
+            } else {
+                return counter;
+            }
+        }
+    }
+    
+    let cell = &v[row_index][cell_index];
+    if cell.eq(token) {
+        return check_oblique_line_right_down(v, token, row_index+1, cell_index-1, counter+1); 
+    } else {
+       return counter;
+    }
 }
 
 fn end_game(v: &Vec<Vec<String>>, red_turn: bool, name: &String) {

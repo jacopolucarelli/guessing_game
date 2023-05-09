@@ -206,7 +206,6 @@ fn check_oblique_line_left_down(v: &Vec<Vec<String>>, token: &str, row_index: us
     if cell.eq(token) {
         return check_oblique_line_left_down(v, token, row_index+1, cell_index+1, counter+1); 
     } else {
-        println!("check_oblique_line_left_down counter B{}", counter);
         return counter;
     }
 }

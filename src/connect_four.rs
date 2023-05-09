@@ -53,13 +53,13 @@ impl GameState {
                 }
                 print!("{}", CELL_SEPARATOR);
             }
-            println!("{}", CELL_SEPARATOR);
+            println!("");
             println!("{}", "-".repeat(self.cols * 2 + 1));
         }
     }
 
     fn print_number(&self) {
-        for i in 0..=self.cols {
+        for i in 0..self.cols {
             print!("{}{}", EMPTY_CELL, i);
         }
     }
@@ -95,7 +95,7 @@ impl GameState {
 
             let trimmed = input.trim();
             match trimmed.parse::<usize>() {
-                Ok(i) if i <= self.cols => break i,
+                Ok(i) if i < self.cols => break i,
                 Ok(i) => println!("{} is greater than {} columns!", i, self.cols),
                 Err(..) => println!("{} is not a column number!", trimmed),
             };

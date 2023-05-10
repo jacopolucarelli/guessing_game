@@ -49,10 +49,22 @@ impl Direction {
     }
 }
 
-struct GameState {
-    grid: Vec<Vec<Token>>,
+struct GridSize {
     rows: usize,
     cols: usize,
+}
+impl GridSize {
+    fn new(rows: usize, cols: usize) -> GridSize {
+        GridSize {
+            rows,
+            cols,
+        }
+    }
+}
+
+struct GameState {
+    grid: Vec<Vec<Token>>,
+    grid_size: GridSize,
     player: Player,
 }
 
@@ -60,15 +72,14 @@ impl GameState {
     fn new(rows: usize, cols: usize) -> GameState {
         GameState {
             grid: vec![vec![Token::Empty; cols]; rows],
-            rows,
-            cols,
+            grid_size: GridSize::new(rows, cols),
             player: Player::Red,
         }
     }
 
     /// Return position if valid
     fn get_position(&self, row: usize, col: usize) -> Option<(usize, usize)> {
-        if row < self.rows && col < self.cols {
+        if row < self.grid_size.rows && col < self.grid_size.cols {
             Some((new_row, new_col))
         } else {
             None
@@ -102,12 +113,12 @@ impl GameState {
                 print!("{}", CELL_SEPARATOR);
             }
             println!("");
-            println!("{}", "-".repeat(self.cols * 2 + 1));
+            println!("{}", "-".repeat(self.grid_size.cols * 2 + 1));
         }
     }
 
     fn print_number(&self) {
-        for i in 0..self.cols {
+        for i in 0..self.grid_size.cols {
             print!("{}{}", EMPTY_CELL, i);
         }
     }
@@ -143,7 +154,7 @@ impl GameState {
 
             let trimmed = input.trim();
             match trimmed.parse::<usize>() {
-                Ok(i) if i < self.cols => break i,
+                Ok(i) if i < self.grid_size.cols => break i,
                 Ok(i) => println!("{} is greater than {} columns!", i, self.cols),
                 Err(..) => println!("{} is not a column number!", trimmed),
             };
@@ -153,7 +164,7 @@ impl GameState {
     }
 
     fn insert_token(&mut self, col: usize) -> Option<(usize, usize)> {
-        for row in (0..self.rows).rev() {
+        for row in (0..self.grid_size.rows).rev() {
             match self.grid[row][col] {
                 Token::Empty => {
                     self.grid[row][col] = self.player.get_token();

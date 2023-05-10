@@ -78,7 +78,7 @@ impl GameState {
     /// Return the next valid position in a given direction or None
     fn transform_position(&self, row: usize, col: usize, dir: Direction) -> Option<(usize, usize)> {
         let (h, v) = dir.get_transform();
-        let (new_row, new_col) = (row+h, col+v);
+        let (new_row, new_col) = (row + h, col + v);
         self.get_position(new_row, new_col)
     }
 
@@ -88,8 +88,7 @@ impl GameState {
     }
 
     /// Calculate the token score in a single direction from a starting position
-    fn direction_score(&self, row: usize, col: usize, dir: Direction) -> usize {
-    }
+    fn direction_score(&self, row: usize, col: usize, dir: Direction) -> usize {}
 
     fn print_grid(&self) {
         for row in &self.grid {

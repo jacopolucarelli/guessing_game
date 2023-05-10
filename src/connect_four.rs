@@ -23,6 +23,32 @@ enum Token {
     Empty,
 }
 
+enum Direction {
+    Up,
+    Down,
+    Left,
+    Right,
+    UpLeft,
+    UpRight,
+    DownLeft,
+    DownRight,
+}
+
+impl Direction {
+    fn get_transform(&self) -> (usize, usize) {
+        match *self {
+            Direction::Up => (-1, 0),
+            Direction::Down => (1, 0),
+            Direction::Left => (0, -1),
+            Direction::Right => (0, 1),
+            Direction::UpLeft => (-1, -1),
+            Direction::UpRight => (-1, 1),
+            Direction::DownLeft => (1, -1),
+            Direction::DownRight => (1, 1),
+        }
+    }
+}
+
 struct GameState {
     grid: Vec<Vec<Token>>,
     rows: usize,
@@ -38,6 +64,31 @@ impl GameState {
             cols,
             player: Player::Red,
         }
+    }
+
+    /// Return position if valid
+    fn get_position(&self, row: usize, col: usize) -> Option<(usize, usize)> {
+        if row < self.rows && col < self.cols {
+            Some((new_row, new_col))
+        } else {
+            None
+        }
+    }
+
+    /// Return the next valid position in a given direction or None
+    fn transform_position(&self, row: usize, col: usize, dir: Direction) -> Option<(usize, usize)> {
+        let (h, v) = dir.get_transform();
+        let (new_row, new_col) = (row+h, col+v);
+        self.get_position(new_row, new_col)
+    }
+
+    /// Get the token at a position or None if out of bounds
+    fn get_token(&self, row: usize, col: usize) -> Option<Token> {
+        self.grid.get(row)?.get(col)
+    }
+
+    /// Calculate the token score in a single direction from a starting position
+    fn direction_score(&self, row: usize, col: usize, dir: Direction) -> usize {
     }
 
     fn print_grid(&self) {

@@ -28,7 +28,6 @@ struct GameState {
     rows: usize,
     cols: usize,
     player: Player,
-    winner: Option<Player>,
 }
 
 impl GameState {
@@ -38,7 +37,6 @@ impl GameState {
             rows,
             cols,
             player: Player::Red,
-            winner: None,
         }
     }
 

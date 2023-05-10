@@ -35,7 +35,7 @@ enum Direction {
 }
 
 impl Direction {
-    fn get_transform(&self) -> (usize, usize) {
+    fn get_transform(&self) -> (i32, i32) {
         match *self {
             Direction::Up => (-1, 0),
             Direction::Down => (1, 0),
@@ -78,9 +78,9 @@ impl GameState {
     }
 
     /// Return position if valid
-    fn get_position(&self, row: usize, col: usize) -> Option<(usize, usize)> {
-        if row < self.grid_size.rows && col < self.grid_size.cols {
-            Some((new_row, new_col))
+    fn get_position(&self, row: i32, col: i32) -> Option<(usize, usize)> {
+        if (row < self.grid_size.rows as i32 && row > 0) && (col < self.grid_size.cols as i32 && col > 0) {
+            Some((row as usize, col as usize))
         } else {
             None
         }
@@ -89,12 +89,14 @@ impl GameState {
     /// Return the next valid position in a given direction or None
     fn transform_position(&self, row: usize, col: usize, dir: Direction) -> Option<(usize, usize)> {
         let (h, v) = dir.get_transform();
-        let (new_row, new_col) = (row + h, col + v);
+        let h = (h, v).0;
+        let v = (h, v).1;
+        let (new_row, new_col) = (row as i32 + h, col as i32 + v);
         self.get_position(new_row, new_col)
     }
 
     /// Get the token at a position or None if out of bounds
-    fn get_token(&self, row: usize, col: usize) -> Option<Token> {
+    fn get_token(&self, row: usize, col: usize) -> Option<&Token> {
         self.grid.get(row)?.get(col)
     }
 
@@ -155,7 +157,7 @@ impl GameState {
             let trimmed = input.trim();
             match trimmed.parse::<usize>() {
                 Ok(i) if i < self.grid_size.cols => break i,
-                Ok(i) => println!("{} is greater than {} columns!", i, self.cols),
+                Ok(i) => println!("{} is greater than {} columns!", i, self.grid_size.cols),
                 Err(..) => println!("{} is not a column number!", trimmed),
             };
         };

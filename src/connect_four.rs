@@ -16,7 +16,7 @@ impl Player {
     }
 }
 
-#[derive(Clone)]
+#[derive(Clone, PartialEq, Eq)]
 enum Token {
     Red,
     Yellow,
@@ -96,12 +96,40 @@ impl GameState {
     }
 
     /// Get the token at a position or None if out of bounds
-    fn get_token(&self, row: usize, col: usize) -> Option<&Token> {
-        self.grid.get(row)?.get(col)
+    fn get_token(&self, row: i32, col: i32) -> Option<&Token> {
+        if row < 0 || col < 0 {
+            return None;
+        }
+        self.grid.get(row as usize)?.get(col as usize)
     }
 
     /// Calculate the token score in a single direction from a starting position
-    fn direction_score(&self, row: usize, col: usize, dir: Direction) -> usize {}
+    fn direction_score(&self, mut row: i32, mut col: i32, dir: Direction) -> usize {
+        
+        let Some(start_token) = self.get_token(row, col) else {return 0};
+
+        match start_token {
+            Token::Empty => return 0,
+            _ => (),
+        };
+        
+        let mut counter: usize = 0;
+        loop {
+            let next_position = (row + dir.get_transform().0, col + dir.get_transform().1);
+            let token = self.get_token(next_position.0, next_position.1);
+            match token {
+                Some(token) => {
+                    if start_token == token {
+                        counter += 1;
+                        continue;
+                    } else {
+                        return counter;
+                    }
+                },
+                None => return counter,
+            }
+        }
+    }
 
     fn print_grid(&self) {
         for row in &self.grid {

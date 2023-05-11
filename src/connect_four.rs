@@ -55,10 +55,7 @@ struct GridSize {
 }
 impl GridSize {
     fn new(rows: usize, cols: usize) -> GridSize {
-        GridSize {
-            rows,
-            cols,
-        }
+        GridSize { rows, cols }
     }
 }
 
@@ -87,9 +84,15 @@ impl GameState {
     }
 
     /// Return the next valid position in a given direction or None
-    fn transform_position(&self, row: usize, col: usize, dir: &Direction) -> Option<(usize, usize)> {
+    fn transform_position(
+        &self,
+        row: usize,
+        col: usize,
+        dir: &Direction,
+    ) -> Option<(usize, usize)> {
         let (hor, ver) = dir.get_transform();
-        let (row, col) = (row.checked_add_signed(hor as isize)?, col.checked_add_signed(ver as isize)?);
+        let row = row.checked_add_signed(hor as isize)?;
+        let col = col.checked_add_signed(ver as isize)?;
         self.get_position(row, col)
     }
 
@@ -100,14 +103,13 @@ impl GameState {
 
     /// Calculate the token score in a single direction from a starting position
     fn direction_score(&self, row: usize, col: usize, dir: &Direction) -> usize {
-        
         let Some(start_token) = self.get_token(row, col) else {return 0};
 
         match start_token {
             Token::Empty => return 0,
             _ => (),
         };
-        
+
         let mut counter: usize = 0;
         loop {
             println!("PRE: {:#?}, {:#?}", row, col);
@@ -123,21 +125,39 @@ impl GameState {
                     } else {
                         return counter;
                     }
-                },
+                }
                 None => return counter,
             }
         }
     }
 
     fn token_score(&self, row: usize, col: usize) -> usize {
-        let v: usize = [Direction::Up, Direction::Down].iter().map(|dir| self.direction_score(row, col, dir)).sum();
-        let h: usize = [Direction::Left, Direction::Right].iter().map(|dir| self.direction_score(row, col, dir)).sum();
-        let d: usize = [Direction::UpRight, Direction::DownLeft].iter().map(|dir| self.direction_score(row, col, dir)).sum();
-        let r: usize = [Direction::UpLeft, Direction::DownRight].iter().map(|dir| self.direction_score(row, col, dir)).sum();
+        let vertical: usize = [Direction::Up, Direction::Down]
+            .iter()
+            .map(|dir| self.direction_score(row, col, dir))
+            .sum();
+        let horizontal: usize = [Direction::Left, Direction::Right]
+            .iter()
+            .map(|dir| self.direction_score(row, col, dir))
+            .sum();
+        let diagonal: usize = [Direction::UpRight, Direction::DownLeft]
+            .iter()
+            .map(|dir| self.direction_score(row, col, dir))
+            .sum();
+        let reverse: usize = [Direction::UpLeft, Direction::DownRight]
+            .iter()
+            .map(|dir| self.direction_score(row, col, dir))
+            .sum();
 
-        let directions = [v, h, d, r];
-        let Some(s) = directions.iter().max() else {return 0};
-        if *s > 1 {*s - 1} else {*s} // remove extra count from direction_score
+        let direction_sums = [vertical, horizontal, diagonal, reverse];
+        let Some(s) = direction_sums.iter().max() else {return 0};
+
+        // remove extra count from direction_score
+        if *s > 1 {
+            *s - 1
+        } else {
+            *s
+        }
     }
 
     fn print_grid(&self) {

@@ -101,8 +101,8 @@ impl GameState {
         self.grid.get(row)?.get(col)
     }
 
-    /// Calculate the token score in a single direction from a starting position
-    fn direction_score(&self, row: usize, col: usize, dir: &Direction) -> usize {
+    /// Calculate number token connected to last in
+    fn direction_score(&self, mut row: usize, mut col: usize, dir: &Direction) -> usize {
         let Some(start_token) = self.get_token(row, col) else {return 0};
 
         match start_token {
@@ -112,14 +112,13 @@ impl GameState {
 
         let mut counter: usize = 0;
         loop {
-            println!("PRE: {:#?}, {:#?}", row, col);
-            let Some((row, col)) = self.transform_position(row, col, dir) else {return counter};
-            println!("POST: {:#?}, {:#?}", row, col);
-            let token = self.get_token(row, col);
-            println!("NEW TOKEN: {:#?}", &token);
+            let Some((new_row, new_col)) = self.transform_position(row, col, dir) else {return counter};
+            let token = self.get_token(new_row, new_col);
             match token {
                 Some(token) => {
                     if start_token == token {
+                        row = new_row;
+                        col = new_col;
                         counter += 1;
                         continue;
                     } else {
@@ -149,15 +148,15 @@ impl GameState {
             .map(|dir| self.direction_score(row, col, dir))
             .sum();
 
+        println!("vertical {}", vertical);
+        println!("horizontal {}", horizontal);
+        println!("diagonal {}", diagonal);
+        println!("reverse {}", reverse);
+        
         let direction_sums = [vertical, horizontal, diagonal, reverse];
         let Some(s) = direction_sums.iter().max() else {return 0};
 
-        // remove extra count from direction_score
-        if *s > 1 {
-            *s - 1
-        } else {
-            *s
-        }
+        *s
     }
 
     fn print_grid(&self) {
@@ -195,7 +194,7 @@ impl GameState {
         };
     }
 
-    fn get_col_input(&self, name: &String) -> usize {
+    fn get_col_input(&self) -> usize {
         print!("It's ");
         match self.player {
             Player::Red => super::console_style::red_color_text("red", true),
@@ -236,7 +235,8 @@ impl GameState {
     }
 
     fn check_win(&self, row: usize, col: usize) -> bool {
-        self.token_score(row, col) >= 4
+        // if 3 tokens connected to last in is a win
+        self.token_score(row, col) >= 3
     }
 
     fn check_tie(&self) -> bool {
@@ -252,7 +252,7 @@ pub fn game(name: String) {
         game_state.print_state();
 
         // ask for col input & validate loop (col exists, has room) -> usize
-        let col = game_state.get_col_input(&name);
+        let col = game_state.get_col_input();
 
         // insert token, get row, col -> (usize, usize)
         let (row, col) = match game_state.insert_token(col) {
@@ -265,6 +265,7 @@ pub fn game(name: String) {
 
         // todo: check win from coords
         if game_state.check_win(row, col) {
+            game_state.print_state();
             match game_state.player {
                 Player::Red => super::console_style::red_color_text("red wins! :D", false),
                 Player::Yellow => super::console_style::yellow_color_text("yellow wins! :D", false),
@@ -280,216 +281,4 @@ pub fn game(name: String) {
         // switch player
         game_state.switch_player();
     }
-}
-
-fn check_end_game(
-    v: &Vec<Vec<String>>,
-    red_turn: bool,
-    name: &String,
-    row_index: usize,
-    cell_index: usize,
-) {
-    if check_horizontal_line(v, red_turn)
-        || check_vertical_line(v, red_turn, row_index, cell_index)
-        || check_oblique_line(v, red_turn, row_index, cell_index)
-    {
-        end_game(v, red_turn, &name);
-    }
-}
-
-fn check_horizontal_line(v: &Vec<Vec<String>>, red_turn: bool) -> bool {
-    let mut counter = 0;
-    for row in v {
-        for cell in row {
-            if counter == 4 {
-                return true;
-            }
-            if red_turn && cell.eq("🔴") {
-                counter += 1;
-            } else if !red_turn && cell.eq("🟡") {
-                counter += 1;
-            } else {
-                counter = 0;
-            }
-        }
-    }
-    return false;
-}
-
-fn check_vertical_line(
-    v: &Vec<Vec<String>>,
-    red_turn: bool,
-    row_index: usize,
-    cell_index: usize,
-) -> bool {
-    // La row più bassa della griglia ha indice 6: se l'ultimo token inserito ha indice maggiore di 3 non posso avere una vincita verticale
-    if row_index > 3 {
-        return false;
-    }
-    let mut counter = 0;
-    // Parto dalla row dell'ultimo token inserito e scendo verso il basso (per scendere devo aumentare la row)
-    for i in row_index..7 {
-        let cell = &v[i][cell_index];
-        if red_turn && cell.eq("🔴") {
-            counter += 1;
-        } else if !red_turn && cell.eq("🟡") {
-            counter += 1;
-        } else {
-            counter = 0;
-        }
-        if counter == 4 {
-            return true;
-        }
-    }
-    return false;
-}
-
-fn check_oblique_line(
-    v: &Vec<Vec<String>>,
-    red_turn: bool,
-    row_index: usize,
-    cell_index: usize,
-) -> bool {
-    let token = if red_turn { "🔴" } else { "🟡" };
-
-    let mut counter = 0; //La cella in cui mi trovo la conto qui
-    counter += check_oblique_line_left_up(v, token, row_index, cell_index, 0);
-    counter += check_oblique_line_left_down(v, token, row_index, cell_index, 0);
-    if counter == 5 {
-        return true;
-    }
-
-    counter = 0;
-    counter += check_oblique_line_right_up(v, token, row_index, cell_index, 0);
-    counter += check_oblique_line_right_down(v, token, row_index, cell_index, 0);
-
-    return counter == 5;
-}
-
-fn check_oblique_line_left_up(
-    v: &Vec<Vec<String>>,
-    token: &str,
-    row_index: usize,
-    cell_index: usize,
-    counter: usize,
-) -> usize {
-    {
-        let row_index_signed: i32 = match row_index.try_into() {
-            Ok(row_index) => row_index,
-            Err(_) => panic!("couldn't fit in i32"),
-        };
-
-        let cell_index_signed: i32 = match cell_index.try_into() {
-            Ok(cell_index) => cell_index,
-            Err(_) => panic!("couldn't fit in i32"),
-        };
-        if row_index_signed - 1 < 0 || cell_index_signed - 1 < 0 || counter == 4 {
-            let cell = &v[row_index][cell_index];
-            if cell.eq(token) {
-                return counter + 1;
-            }
-            return counter;
-        }
-    }
-
-    let cell = &v[row_index][cell_index];
-    if cell.eq(token) {
-        return check_oblique_line_left_up(v, token, row_index - 1, cell_index - 1, counter + 1);
-    } else {
-        return counter;
-    }
-}
-
-fn check_oblique_line_left_down(
-    v: &Vec<Vec<String>>,
-    token: &str,
-    row_index: usize,
-    cell_index: usize,
-    counter: usize,
-) -> usize {
-    if row_index + 1 > 6 || cell_index + 1 > 6 || counter == 4 {
-        let cell = &v[row_index][cell_index];
-        if cell.eq(token) {
-            return counter + 1;
-        }
-        return counter;
-    }
-
-    let cell = &v[row_index][cell_index];
-    if cell.eq(token) {
-        return check_oblique_line_left_down(v, token, row_index + 1, cell_index + 1, counter + 1);
-    } else {
-        return counter;
-    }
-}
-
-fn check_oblique_line_right_up(
-    v: &Vec<Vec<String>>,
-    token: &str,
-    row_index: usize,
-    cell_index: usize,
-    counter: usize,
-) -> usize {
-    {
-        let row_index_signed: i32 = match row_index.try_into() {
-            Ok(row_index) => row_index,
-            Err(_) => panic!("couldn't fit in i32"),
-        };
-
-        if row_index_signed - 1 < 0 || cell_index + 1 > 6 || counter == 4 {
-            let cell = &v[row_index][cell_index];
-            if cell.eq(token) {
-                return counter + 1;
-            }
-            return counter;
-        }
-    }
-
-    let cell = &v[row_index][cell_index];
-    if cell.eq(token) {
-        return check_oblique_line_right_up(v, token, row_index - 1, cell_index + 1, counter + 1);
-    } else {
-        return counter;
-    }
-}
-
-fn check_oblique_line_right_down(
-    v: &Vec<Vec<String>>,
-    token: &str,
-    row_index: usize,
-    cell_index: usize,
-    counter: usize,
-) -> usize {
-    {
-        let cell_index_signed: i32 = match cell_index.try_into() {
-            Ok(cell_index) => cell_index,
-            Err(_) => panic!("couldn't fit in i32"),
-        };
-
-        if cell_index_signed - 1 < 0 || row_index + 1 > 6 || counter == 4 {
-            let cell = &v[row_index][cell_index];
-            if cell.eq(token) {
-                return counter + 1;
-            } else {
-                return counter;
-            }
-        }
-    }
-
-    let cell = &v[row_index][cell_index];
-    if cell.eq(token) {
-        return check_oblique_line_right_down(v, token, row_index + 1, cell_index - 1, counter + 1);
-    } else {
-        return counter;
-    }
-}
-
-fn end_game(v: &Vec<Vec<String>>, red_turn: bool, name: &String) {
-    //print_state(&v);
-    if red_turn {
-        super::console_style::red_color_text("red wins! :D", false)
-    } else {
-        super::console_style::yellow_color_text("yellow wins! :D", false)
-    }
-    return super::common_function::end_game_or_start_new(game, name.to_string());
 }

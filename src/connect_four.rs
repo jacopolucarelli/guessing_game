@@ -16,7 +16,7 @@ impl Player {
     }
 }
 
-#[derive(Clone, PartialEq, Eq)]
+#[derive(Debug, Clone, PartialEq, Eq)]
 enum Token {
     Red,
     Yellow,
@@ -78,33 +78,28 @@ impl GameState {
     }
 
     /// Return position if valid
-    fn get_position(&self, row: i32, col: i32) -> Option<(usize, usize)> {
-        if (row < self.grid_size.rows as i32 && row > 0) && (col < self.grid_size.cols as i32 && col > 0) {
-            Some((row as usize, col as usize))
+    fn get_position(&self, row: usize, col: usize) -> Option<(usize, usize)> {
+        if row < self.grid_size.rows && col < self.grid_size.cols {
+            Some((row, col))
         } else {
             None
         }
     }
 
     /// Return the next valid position in a given direction or None
-    fn transform_position(&self, row: usize, col: usize, dir: Direction) -> Option<(usize, usize)> {
-        let (h, v) = dir.get_transform();
-        let h = (h, v).0;
-        let v = (h, v).1;
-        let (new_row, new_col) = (row as i32 + h, col as i32 + v);
-        self.get_position(new_row, new_col)
+    fn transform_position(&self, row: usize, col: usize, dir: &Direction) -> Option<(usize, usize)> {
+        let (hor, ver) = dir.get_transform();
+        let (row, col) = (row.checked_add_signed(hor as isize)?, col.checked_add_signed(ver as isize)?);
+        self.get_position(row, col)
     }
 
     /// Get the token at a position or None if out of bounds
-    fn get_token(&self, row: i32, col: i32) -> Option<&Token> {
-        if row < 0 || col < 0 {
-            return None;
-        }
-        self.grid.get(row as usize)?.get(col as usize)
+    fn get_token(&self, row: usize, col: usize) -> Option<&Token> {
+        self.grid.get(row)?.get(col)
     }
 
     /// Calculate the token score in a single direction from a starting position
-    fn direction_score(&self, mut row: i32, mut col: i32, dir: Direction) -> usize {
+    fn direction_score(&self, row: usize, col: usize, dir: &Direction) -> usize {
         
         let Some(start_token) = self.get_token(row, col) else {return 0};
 
@@ -115,8 +110,11 @@ impl GameState {
         
         let mut counter: usize = 0;
         loop {
-            let next_position = (row + dir.get_transform().0, col + dir.get_transform().1);
-            let token = self.get_token(next_position.0, next_position.1);
+            println!("PRE: {:#?}, {:#?}", row, col);
+            let Some((row, col)) = self.transform_position(row, col, dir) else {return counter};
+            println!("POST: {:#?}, {:#?}", row, col);
+            let token = self.get_token(row, col);
+            println!("NEW TOKEN: {:#?}", &token);
             match token {
                 Some(token) => {
                     if start_token == token {
@@ -129,6 +127,17 @@ impl GameState {
                 None => return counter,
             }
         }
+    }
+
+    fn token_score(&self, row: usize, col: usize) -> usize {
+        let v: usize = [Direction::Up, Direction::Down].iter().map(|dir| self.direction_score(row, col, dir)).sum();
+        let h: usize = [Direction::Left, Direction::Right].iter().map(|dir| self.direction_score(row, col, dir)).sum();
+        let d: usize = [Direction::UpRight, Direction::DownLeft].iter().map(|dir| self.direction_score(row, col, dir)).sum();
+        let r: usize = [Direction::UpLeft, Direction::DownRight].iter().map(|dir| self.direction_score(row, col, dir)).sum();
+
+        let directions = [v, h, d, r];
+        let Some(s) = directions.iter().max() else {return 0};
+        if *s > 1 {*s - 1} else {*s} // remove extra count from direction_score
     }
 
     fn print_grid(&self) {
@@ -207,7 +216,7 @@ impl GameState {
     }
 
     fn check_win(&self, row: usize, col: usize) -> bool {
-        false
+        self.token_score(row, col) >= 4
     }
 
     fn check_tie(&self) -> bool {
@@ -236,7 +245,11 @@ pub fn game(name: String) {
 
         // todo: check win from coords
         if game_state.check_win(row, col) {
-            todo!();
+            match game_state.player {
+                Player::Red => super::console_style::red_color_text("red wins! :D", false),
+                Player::Yellow => super::console_style::yellow_color_text("yellow wins! :D", false),
+            }
+            return super::common_function::end_game_or_start_new(game, name.to_string());
         }
 
         // todo: check tie (all slots taken but no winner)

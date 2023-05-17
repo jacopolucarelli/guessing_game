@@ -3,11 +3,16 @@ use std::io::{Write, stdout};
 use crossterm::{QueueableCommand, cursor, terminal, ExecutableCommand};
 use rand::{distributions::Alphanumeric, Rng};
 use std::io;
+use crate::console_style::{
+    green_color_text,
+    red_color_text
+};
+use crate::common_function::end_game_or_start_new;
 
 pub fn game(name: String) {
 
     println!("{}, remember the sequence!", name.trim());
-    super::console_style::green_color_text("Press enter when you ready", false);
+    green_color_text("Press enter when you ready", false);
     
     let mut _ready = String::new();
     io::stdin()
@@ -38,15 +43,15 @@ fn encrease_string(mut str: String, name: String) {
         encrease_string(str, name);
     } else {
         
-        super::console_style::red_color_text("You lose :(", false);
+        red_color_text("You lose :(", false);
         print!("Sequence was ");
-        super::console_style::green_color_text(str.as_str(), true);
+        green_color_text(str.as_str(), true);
         print!(" but you type ");
-        super::console_style::red_color_text(sequence.trim(), false);
+        red_color_text(sequence.trim(), false);
         print!("You have memorized ");
-        super::console_style::green_color_text((str.len()-1).to_string().as_str(), true);
+        green_color_text((str.len()-1).to_string().as_str(), true);
         println!(" char sequence! :D");
-        return super::common_function::end_game_or_start_new(game, name);
+        return end_game_or_start_new(game, name);
     }
 }
 

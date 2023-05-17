@@ -1,8 +1,18 @@
 use std::io;
+use crate::console_style::{
+    yellow_color_text,
+    green_color_text,
+    red_color_text
+};
+use crate::common_function::end_game_or_start_new;
 
 pub fn game(name: String) {
     println!("{}, guess the word!", name.trim());
+
+    // eng word
     // let secret_word = random_word::gen();
+
+    // ita word
     let secret_word = random_ita_word();
     let v: String = secret_word.chars().map(|_c| "_".to_string()).collect();
     type_letter(secret_word.to_string(), v, 10, name);
@@ -13,21 +23,21 @@ fn type_letter(secret_word: String, mut v: String, mut num_try: u32, name: Strin
     let underscore_index = v.find('_').unwrap_or(v.len());
 
     if  underscore_index == v.len() {
-        super::console_style::green_color_text("You win :D", false);
+        green_color_text("You win :D", false);
         print!("You find the secret word ");
-        super::console_style::green_color_text(&secret_word, false);
-        return super::common_function::end_game_or_start_new(game, name);
+        green_color_text(&secret_word, false);
+        return end_game_or_start_new(game, name);
     }
 
     if  num_try == 0 {
-        super::console_style::red_color_text("You lose :(", false);
+        red_color_text("You lose :(", false);
         print!("The secret word was ");
-        super::console_style::red_color_text(&secret_word, false);
-        return super::common_function::end_game_or_start_new(game, name);
+        red_color_text(&secret_word, false);
+        return end_game_or_start_new(game, name);
     }
 
     let message = "You have # more attempts. Type a letter...".replace("#", num_try.to_string().as_str());
-    super::console_style::yellow_color_text(&message, false);
+    yellow_color_text(&message, false);
 
     let mut letter = String::new();
     io::stdin()

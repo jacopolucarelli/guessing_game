@@ -1,5 +1,11 @@
 use std::{thread, time};
 use std::io;
+use crate::guessing_number;
+use crate::hang_man;
+use crate::memory_sequence;
+use crate::connect_four;
+use crate::ascii_pics::meme;
+use crate::console_style::yellow_color_text;
 
 pub fn menu(name: String) {
     let mut game_index = String::new();
@@ -16,19 +22,19 @@ pub fn menu(name: String) {
         .expect("Failed to read line");
 
     match game_index.trim() {   
-        "1" => return super::guessing_number::game(name),
-        "2" => return super::hang_man::game(name),
-        "3" => return super::memory_sequence::game(name),
-        "4" => return super::connect_four::game(name),
+        "1" => return guessing_number::game(name),
+        "2" => return hang_man::game(name),
+        "3" => return memory_sequence::game(name),
+        "4" => return connect_four::game(name),
         _ => { 
-            print_string(super::ascii_pics::meme(), 50);
+            print_string(meme(), 50);
             thread::sleep(time::Duration::from_millis(150));
         },
     }
 }
 
 pub fn end_game_or_start_new<F: FnOnce(String)>(f: F, name: String) {
-    super::console_style::yellow_color_text("Type NEW for a new game or something else to go back to menu", false);
+    yellow_color_text("Type NEW for a new game or something else to go back to menu", false);
     let mut command = String::new();
     io::stdin()
             .read_line(&mut command)
@@ -36,13 +42,13 @@ pub fn end_game_or_start_new<F: FnOnce(String)>(f: F, name: String) {
     if "NEW".eq(&command.trim().to_uppercase()) {
             return f(String::from("Once again"));
     } else {
-        super::common_function::menu(name);
+        menu(name);
     }
 }
 
 pub fn print_string(str: String, sleep_print: u64) {
     for l in str.lines() {
-        super::console_style::yellow_color_text(l, false);
+        yellow_color_text(l, false);
         thread::sleep(time::Duration::from_millis(sleep_print));
     }
 }

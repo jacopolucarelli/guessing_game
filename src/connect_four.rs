@@ -1,4 +1,9 @@
 use std::io;
+use crate::console_style::{
+    yellow_color_text,
+    red_color_text
+};
+use crate::common_function::end_game_or_start_new;
 
 const EMPTY_CELL: &str = " ";
 const CELL_SEPARATOR: &str = "|";
@@ -164,8 +169,8 @@ impl GameState {
             print!("{}", CELL_SEPARATOR);
             for token in row {
                 match token {
-                    Token::Red => super::console_style::red_color_text("O", true),
-                    Token::Yellow => super::console_style::yellow_color_text("X", true),
+                    Token::Red => red_color_text("O", true),
+                    Token::Yellow => yellow_color_text("X", true),
                     Token::Empty => print!("{}", EMPTY_CELL),
                 }
                 print!("{}", CELL_SEPARATOR);
@@ -197,8 +202,8 @@ impl GameState {
     fn get_col_input(&self) -> usize {
         print!("It's ");
         match self.player {
-            Player::Red => super::console_style::red_color_text("red", true),
-            Player::Yellow => super::console_style::yellow_color_text("yellow", true),
+            Player::Red => red_color_text("red", true),
+            Player::Yellow => yellow_color_text("yellow", true),
         }
         println!(" turn");
 
@@ -235,7 +240,7 @@ impl GameState {
     }
 
     fn check_win(&self, row: usize, col: usize) -> bool {
-        // if 3 tokens connected to last in is a win
+        // if 3 tokens are connected to last in is a win
         self.token_score(row, col) >= 3
     }
 
@@ -267,10 +272,10 @@ pub fn game(name: String) {
         if game_state.check_win(row, col) {
             game_state.print_state();
             match game_state.player {
-                Player::Red => super::console_style::red_color_text("red wins! :D", false),
-                Player::Yellow => super::console_style::yellow_color_text("yellow wins! :D", false),
+                Player::Red => red_color_text("red wins! :D", false),
+                Player::Yellow => yellow_color_text("yellow wins! :D", false),
             }
-            return super::common_function::end_game_or_start_new(game, name.to_string());
+            return end_game_or_start_new(game, name.to_string());
         }
 
         // todo: check tie (all slots taken but no winner)
